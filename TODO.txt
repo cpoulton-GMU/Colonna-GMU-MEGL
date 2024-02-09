@@ -1,0 +1,6 @@
+TODO 2/9/2024
+
+*AlternateEvenCase
+-Create new FindVertices function that alternates generators
+-Update FindGenerators to take a list to add the generators to
+-Update call to FindVertices to only draw one branch
