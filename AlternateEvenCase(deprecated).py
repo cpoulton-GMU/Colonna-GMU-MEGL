@@ -7,8 +7,8 @@ ODD_DEGREE = 6  # odd alternating degree.
 EVEN_DEGREE = 4 # even alternating degree
 BOUNDRY_DEGREE = 18 # boundry tree
 SEGMENTLENGTH = np.cos(np.pi/BOUNDRY_DEGREE) # branch length
-DEPTH = 1 # number of iterations
-Generators_even = dict()- # stores the generators for the group associated with the tree. Generators are represented by mobius transforms as 2x2 complex valued matricies
+DEPTH = 3 # number of iterations
+Generators_even = dict() # stores the generators for the group associated with the tree. Generators are represented by mobius transforms as 2x2 complex valued matricies
 Generators_odd = dict()
 Generators_boundry = dict()
 AlternatingGeodesics = [] # keeps track of edges/geodesics of tree
@@ -65,7 +65,6 @@ def FindVerticies(Generators, Parents, Calculate_Inverse, CurrentDepth):  # func
 
     #base case
     if CurrentDepth < DEPTH:
-        print("test2")
         FindVerticies(Generators, newparents, True, CurrentDepth + 1)
 
 
@@ -91,10 +90,10 @@ def FindVerticiesAlternating(Generators, Parents, Calculate_Inverse, CurrentDept
 
     #base case
     if CurrentDepth < DEPTH:
-        if (CurrentDepth % 2) == 0:
-            newgens = Generators_even
-        else:
+        if (CurrentDepth % 2) == 1:
             newgens = Generators_odd
+        else:
+            newgens = Generators_even
         FindVerticiesAlternating(newgens, newparents, True, CurrentDepth + 1)
 
 
@@ -116,20 +115,17 @@ Generators_boundry = FindGenerators(dict(), BOUNDRY_DEGREE)
 
 InitialParentAlt =  [[Generators_odd[0], Norm_Vector(Generators_odd[0]@np.array([0+0j,1+0j])), Find_Gen_Inverse_Even(0,len(Generators_odd))]]
 FindVerticiesAlternating(Generators_odd, InitialParentAlt, True, 0)
-InitialParentBoundry =  [[Generators_boundry[0], Norm_Vector(Generators_boundry[0]@np.array([0+0j,1+0j])), Find_Gen_Inverse_Even(0,len(Generators_boundry))]]
-FindVerticies(Generators_boundry, InitialParentBoundry, True, 0)
+#InitialParentBoundry =  [[Generators_boundry[0], Norm_Vector(Generators_boundry[0]@np.array([0+0j,1+0j])), Find_Gen_Inverse_Even(0,len(Generators_boundry))]]
+#FindVerticies(Generators_boundry, InitialParentBoundry, True, 0)
 
 figure = drawtools.HyperbolicDrawing(model=Model)
 figure.draw_plane()
 
-for geodesic in BoundryGeodesics:
-    figure.draw_geodesic(geodesic, color='RED')
+#for geodesic in BoundryGeodesics:
+    #figure.draw_geodesic(geodesic, color='RED')
 
 for geodesic in AlternatingGeodesics:
     figure.draw_geodesic(geodesic, color='BLACK')
-
-
-
 
 
 figure.show()

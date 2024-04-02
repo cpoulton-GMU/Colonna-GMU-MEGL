@@ -3,7 +3,7 @@ from geometry_tools import hyperbolic
 from geometry_tools import drawtools
 
 
-Degree = 4  # degree of the tree
+Degree = 3  # degree of the tree
 SegmentLength = np.cos(np.pi/Degree) # branch length
 Depth = 6  # number of iterations
 Generators = [] # stores the generators for the group associated with the tree. Generators are represented by mobius transforms as 2x2 complex valued matricies

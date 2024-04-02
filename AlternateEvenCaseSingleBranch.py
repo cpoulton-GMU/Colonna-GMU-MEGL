@@ -2,10 +2,10 @@ import numpy as np
 from geometry_tools import hyperbolic
 from geometry_tools import drawtools
 
-DEPTH = 100
+DEPTH = 10
 
-ODD_DEGREE = 6
-EVEN_DEGREE = 4
+ODD_DEGREE = 4
+EVEN_DEGREE = 8
 BOUNDARY_DEGREE = ODD_DEGREE * (EVEN_DEGREE - 1)
 
 ODD_LENGTH = np.cos(np.pi/ODD_DEGREE)
@@ -25,7 +25,7 @@ def Render():    # calls geometry tools to render the hyperbolic tree
         if i == 0:
             geodesic_color = 'RED'
         elif i % 2 == 0:
-            geodesic_color = 'GREEN'
+            geodesic_color = 'ORANGE'
         else:
             geodesic_color = 'BLUE'
         figure.draw_geodesic(geodesic, color=geodesic_color)
@@ -53,17 +53,16 @@ def Add_Geodesic(complex_point_1, complex_point_2):
 
 def Find_Even_Generator():
 
-
-
-    upward_direction = np.floor(EVEN_DEGREE / 4)
+    upward_direction = (EVEN_DEGREE / 2) - 1
 
     r_zeta = np.clongdouble(np.exp((1j * np.pi * upward_direction) / (EVEN_DEGREE / 2)))  # lower case zeta in the original paper page 317
     r_generator = np.array([[1, ODD_LENGTH * r_zeta], [ODD_LENGTH * np.conjugate(r_zeta),
                                                        1]])  # mobius transform for even degree with length of odd degree
     r_point = r_generator @ np.array([0 + 0j, 1 + 0j])
     angle = np.arctan(r_point.real / r_point.imag)
+    print(angle[1])
 
-    zeta = np.clongdouble(np.exp(1j * angle[0]))
+    zeta = np.clongdouble(np.exp(1j * angle[1]))
     generator = np.array([[1, EVEN_LENGTH * zeta], [EVEN_LENGTH * np.conjugate(zeta),
                                                        1]])
 
@@ -72,16 +71,17 @@ def Find_Even_Generator():
 
 def Find_Odd_Generator():
 
-    upward_direction = np.floor(ODD_DEGREE / 4)
+    upward_direction = (ODD_DEGREE / 2) - 1
 
     zeta = np.clongdouble(np.exp((1j * np.pi * upward_direction) / (ODD_DEGREE / 2)))
     generator = np.array([[1, ODD_LENGTH * zeta], [ODD_LENGTH * np.conjugate(zeta), 1]])
 
     return generator
 
-def Find_Base_GENERATOR():
 
-    zeta = 0
+def Find_Base_GENERATOR(): #real valued gnerator that starts the odd degree
+
+    zeta = 1
     generator = np.array([[1, ODD_LENGTH * zeta], [ODD_LENGTH * np.conjugate(zeta), 1]])
 
     return generator
@@ -122,6 +122,6 @@ base_generator = Find_Base_GENERATOR()
 Find_Boundry_Geodesic()
 Add_Geodesic(np.array([0,1]), base_generator @ np.array([0,1]))
 
-Calculate_Tree(base_generator, even_generator, odd_generator,  0, np.array([ODD_LENGTH, 1 + 0j]))
+Calculate_Tree(base_generator, even_generator, odd_generator,  0, base_generator@np.array([0,1]))
 
 Render()
