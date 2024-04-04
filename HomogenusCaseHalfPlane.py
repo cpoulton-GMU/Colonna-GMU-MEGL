@@ -34,7 +34,7 @@ def generate_tree(parent_words, iterations):
             for potential_match in parent_words:
                 print(new_word)
                 print(potential_match)
-                if new_word == potential_match.all():
+                if np.array_equal(new_word, potential_match, equal_nan=True):
                     ignore = True
                     print("ERROR")
                     break
@@ -50,7 +50,7 @@ def generate_tree(parent_words, iterations):
             geodesic = hyperbolic.Segment(parent_point, child_point)
             Geodesics.append(geodesic)
         else:
-            ignore = False
+            ignore = True
 
     if iterations < TOTAL_ITERATIONS:
         generate_tree(current_words, iterations + 1)
