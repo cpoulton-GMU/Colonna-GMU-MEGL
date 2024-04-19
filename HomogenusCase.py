@@ -3,75 +3,61 @@ from geometry_tools import hyperbolic
 from geometry_tools import drawtools
 
 
-Degree = 3  # degree of the tree
-SegmentLength = np.cos(np.pi/Degree) # branch length
-Depth = 6  # number of iterations
-Generators = [] # stores the generators for the group associated with the tree. Generators are represented by mobius transforms as 2x2 complex valued matricies
-Geodesics = [] # keeps track of edges/geodesics of tree
-Points = [] # array of all points/verticies in tree
-Origin = np.array([0,1])
-ShowPoints = False  # allows you to plot points for verticies
-ShowGeodesics = True # allows you to toggle edges on/off
-Model = hyperbolic.Model.POINCARE  # uses poincare disk
-#Model = hyperbolic.Model.HALFPLANE # for upper half plane
-EvenDegree = ((Degree % 2) == 0)  # are we in even or odd case
+DEGREE = 6
+TOTAL_ITERATIONS = 5
+MODEL = hyperbolic.Model.POINCARE
+SEGMENT_LENGTH = np.cos(np.pi/DEGREE)
+ORIGIN = np.array([0, 1])
+
+Generators = []
+Geodesics = []
 
 
-def FindGenerators():    # this function produces the list of generators as mobius transforms (see page 317 in Flavia's originial paper)
-    for i in range(0,Degree):
-        if EvenDegree:   # even degree case
-            if i == (Degree / 2):
-                rot = -1+0j
-            else:
-                rot = np.clongdouble(np.exp((1j*np.pi*(i))/(Degree / 2))) #lower case zeta in the original paper page 317
-            gen = np.array([[1,SegmentLength * rot],[SegmentLength * np.conjugate(rot),1]])
-            Generators.append(gen)
-        else:    # odd degree case
-            rot = np.clongdouble(np.exp((1j * np.pi * (2*i-1)) / (Degree)))
-            gen = np.array([[SegmentLength*rot,-1],[1,(-1)*SegmentLength*np.conjugate(rot)]])
-            Generators.append(gen)
+class VertexWord:
+    def __init__(self, projection_matrix, backward_projection_matrix):
+        self.proj_mtrx = projection_matrix
+        self.bk_proj_mtrx = backward_projection_matrix
 
-def FindVerticies(parentwords, parentc, backwardgens, currentDepth):  # function produces array of all verticies from the generators
-    newparentwords = [] #new words to be added to the associated group IE compositions of generators
-    newparentc = [] #new verticies as points in C
-    newbackwardgens = [] #the generator that would take a given parent backwards. Indices need to be identical to newparentwords TODO implement this as dictionary
-    for k, parent in enumerate(parentwords):
-        parentPoint = hyperbolic.Point([parentc[k].real, parentc[k].imag], model=Model)
-        if EvenDegree:    # even degree case
-            for i, gen in enumerate(Generators):
-                if (i != backwardgens[k]) or (backwardgens[k] == -1): #ignore the generator that would take us backwards toward the origin
-                    word = parent@gen #get the next word by composing the current generator with the parent word
-                    z = word@Origin #multiply origin by the new word to find the coordinate of the vertex in projective space
-                    z = z[0] / z[1] #convert from projective space to C
-                    newparentwords.append(word)
-                    newbackwardgens.append((i + (Degree/2)) % Degree) #the index of the inverse generator for the generator just applied
-                    newparentc.append(z) #save parent as complex number
-                    childPoint= hyperbolic.Point([z.real, z.imag], model=Model) #need to convert to special class for geometry_tools
-                    Points.append(childPoint)
-                    geodesic = hyperbolic.Segment(parentPoint,childPoint)
-                    Geodesics.append(geodesic)
-        else:
-            #TODO ignore generators that take us backwards
-            for i, gen in enumerate(Generators):  #odd degree case
-                word = parent @ gen
-                z = word @ Origin
-                z = z[0] / z[1]
-                newparentwords.append(word)
-                newbackwardgens.append(i)
-                newparentc.append(z)
-                childPoint = hyperbolic.Point([z.real, z.imag], model=Model)
-                Points.append(childPoint)
-                geodesic = hyperbolic.Segment(parentPoint, childPoint)
+
+def find_generators():
+    generators = []
+    for i in range(0, DEGREE):
+        angle_of_rot = np.exp((1j*np.pi*i) / (DEGREE / 2))
+        generator = np.array([[1, SEGMENT_LENGTH*angle_of_rot], [SEGMENT_LENGTH*np.conjugate(angle_of_rot), 1]])
+        generators.append(generator)
+
+    for i, gens in enumerate(generators):
+        inverse_id = ((i + (DEGREE / 2)) % DEGREE)
+        inverse_id = int(inverse_id)
+        Generators.append(VertexWord(gens, generators[inverse_id]))
+
+
+def normalize_projective_vector(proj_coordinate):
+    return proj_coordinate[0] / proj_coordinate[1]
+
+
+def generate_tree(parent_words, iterations):
+    current_words = []
+    for parent in parent_words:
+        for gens in Generators:
+            if not np.array_equal(gens.bk_proj_mtrx, parent.bk_proj_mtrx):
+                new_word = parent.proj_mtrx @ gens.proj_mtrx
+                current_words.append(VertexWord(new_word, gens.bk_proj_mtrx))
+                child_projective_coordinates = new_word @ ORIGIN
+                child_coordinate = normalize_projective_vector(child_projective_coordinates)
+                child_point = hyperbolic.Point([child_coordinate.real, child_coordinate.imag], model=MODEL)
+                parent_projective_coordinate = parent.proj_mtrx @ ORIGIN
+                parent_coordinate = normalize_projective_vector(parent_projective_coordinate)
+                parent_point = hyperbolic.Point([parent_coordinate.real, parent_coordinate.imag], model=MODEL)
+                geodesic = hyperbolic.Segment(parent_point, child_point)
                 Geodesics.append(geodesic)
 
-
-    #base case
-    if currentDepth < Depth:
-        FindVerticies(newparentwords,newparentc,newbackwardgens,currentDepth+1)
+    if iterations < TOTAL_ITERATIONS:
+        generate_tree(current_words, iterations + 1)
 
 
-def Render():    # calls geometry tools to render the hyperbolic tree
-    figure = drawtools.HyperbolicDrawing(model=Model)
+def render():    # calls geometry tools to render the hyperbolic tree
+    figure = drawtools.HyperbolicDrawing(model=MODEL)
     figure.draw_plane()
 
     for geodesic in Geodesics:    # draws the geodesics
@@ -80,7 +66,7 @@ def Render():    # calls geometry tools to render the hyperbolic tree
     figure.show()
 
 
-#Main
-FindGenerators()
-FindVerticies([np.identity(2)],[0],[-1],0)
-Render()
+#MAIN
+find_generators()
+generate_tree([VertexWord(np.identity(2), np.identity(2))], 0)
+render()
